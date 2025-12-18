@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>รายการครุภัณฑ์</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
-
 <style>
 *{font-family:'Prompt',sans-serif;margin:0;padding:0;box-sizing:border-box;}
 body{
@@ -30,7 +29,6 @@ nav a{
   font-weight:500;
 }
 nav a:hover{opacity:.7}
-
 .container{
   max-width:1000px;
   margin:auto;
@@ -38,7 +36,6 @@ nav a:hover{opacity:.7}
   padding:30px;
   border-radius:20px;
 }
-
 .search-box{
   display:flex;
   justify-content:center;
@@ -52,7 +49,6 @@ nav a:hover{opacity:.7}
   outline:none;
   font-size:15px;
 }
-
 table{
   width:100%;
   border-collapse:collapse;
@@ -62,13 +58,77 @@ th,td{
   text-align:center;
   border-bottom:1px solid rgba(255,255,255,.2);
 }
-
 .status-ok{color:#4ade80;font-weight:600;}
 .status-broken{color:#f87171;font-weight:600;}
 .no-data{text-align:center;opacity:.6;padding:20px;}
+button{
+  padding:5px 10px;
+  border:none;
+  border-radius:6px;
+  background:#4ade80;
+  color:#000;
+  cursor:pointer;
+}
+button:hover{
+  opacity:0.8;
+}
+
+/* Modal ปรับปรุง */
+#modal{
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.7);
+  justify-content:center;
+  align-items:center;
+  animation: fadeIn 0.3s ease;
+}
+
+#modalContent{
+  position:relative;
+  max-width:600px;
+  width:90%;
+  background:#222;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 0 20px rgba(0,0,0,0.8);
+  transform: scale(0.8);
+  opacity:0;
+  animation: scaleUp 0.3s forwards;
+}
+
+#modalContent img{
+  width:100%;
+  border-radius:10px;
+}
+
+#closeModal{
+  position:absolute;
+  top:10px;
+  right:10px;
+  cursor:pointer;
+  font-size:24px;
+  color:white;
+  background:rgba(0,0,0,0.5);
+  border-radius:50%;
+  width:30px;
+  height:30px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+/* Animation */
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+@keyframes scaleUp{
+  to{transform: scale(1); opacity:1;}
+}
 </style>
 </head>
-
 <body>
 
 <header>
@@ -81,7 +141,6 @@ th,td{
 </header>
 
 <div class="container">
-
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="ค้นหาเลขครุภัณฑ์ / รายการ / ห้อง">
   </div>
@@ -94,28 +153,40 @@ th,td{
         <th>ห้อง</th>
         <th>สถานะ</th>
         <th>วันที่ตรวจล่าสุด</th>
+        <th>ดูตัวอย่าง</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
+</div>
 
+<!-- Modal -->
+<div id="modal">
+  <div id="modalContent">
+    <span id="closeModal">✖</span>
+    <img id="modalImg" src="" alt="รูปครุภัณฑ์">
+  </div>
 </div>
 
 <script>
-/* =========================
-   ตรวจสอบสิทธิ์ admin
-========================= */
-if(localStorage.getItem("userRole") === "admin"){
-  document.getElementById("adminLink").style.display = "inline";
-}
+// Mapping ชื่อรายการ -> รูปภาพ
+const imageMap = {
+  "TV": "TV.jpg",
+  "คอม": "com.jpg",
+  "all in one": "aio.jpg",
+  "จอ": "moniter.jpg",
+  "ขาทีวี": "legtv.jpg",
+  "แอร์": "air.jpg",
+  "โต๊ะคางหมู": "tablepig.jpg",
+  "โต้ะ": "table.jpg",
+  "เก้าอี้": "chair.jpg",
+  "เก้าอี้เกมมิ่ง": "chairgamming.jpg",
+  "ตู้": "tu.jpg"
+};
 
-/* =========================
-   ใส่ข้อมูลตั้งต้น (ใช้ versioning)
-========================= */
-const currentVersion = "1.1"; // เปลี่ยนเวอร์ชันทุกครั้งที่แก้ seedData
-
+// ข้อมูลครุภัณฑ์
 const seedData = [
-{code:"7440-001-0188-601-008", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"17/12/68"},
+  {code:"7440-001-0188-601-008", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"17/12/68"},
   {code:"7440-006-0001-672-003", name:"all in one", room:"927", status:"พร้อมใช้งาน", date:"17/12/68"},
   {code:"7440-006-0001-672-002", name:"all in one", room:"927", status:"พร้อมใช้งาน", date:"17/12/68"},
   {code:"7440-001-0188-601-024", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"17/12/68"},
@@ -171,7 +242,7 @@ const seedData = [
 {code:"FCU-NO-156", name:"แอร์", room:"922", status:"พร้อมใช้งาน", date:"17/12/68"},
 {code:"FCU-NO-157", name:"แอร์", room:"922", status:"พร้อมใช้งาน", date:"17/12/68"},
 // ===== ห้อง 929 =====
-{code:"5820-010-0001-552-002", name:"ขาTV", room:"929", status:"พร้อมใช้งาน", date:"17/12/68"},
+{code:"5820-010-0001-552-002", name:"ขาทีวี", room:"929", status:"พร้อมใช้งาน", date:"17/12/68"},
 {code:"7730-003-0006-652-001", name:"TV", room:"929", status:"พร้อมใช้งาน", date:"17/12/68"},
 {code:"4120-001-0084-008", name:"แอร์", room:"929", status:"พร้อมใช้งาน", date:"17/12/68"},
 {code:"7110-006-0063-632-047", name:"เก้าอี้", room:"929", status:"พร้อมใช้งาน", date:"17/12/68"},
@@ -402,25 +473,16 @@ const seedData = [
   {code:"7730-003-0036-643-004", name:"จอ", room:"921", status:"พร้อมใช้งาน", date:"17/12/68"}
 ];
 
-// ถ้าเวอร์ชันใน localStorage ไม่ตรงกับ currentVersion ให้รีเซ็ต
-if(localStorage.getItem("equipmentVersion") !== currentVersion){
-  localStorage.setItem("equipmentData", JSON.stringify(seedData));
-  localStorage.setItem("equipmentVersion", currentVersion);
-}
-
-/* =========================
-   ฟังก์ชันแสดงข้อมูลในตาราง
-========================= */
+// สร้างตาราง
 function renderTable(data){
   const tbody = document.getElementById("tableBody");
   tbody.innerHTML = "";
-
   if(data.length === 0){
-    tbody.innerHTML = `<tr><td colspan="5" class="no-data">ไม่พบข้อมูล</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="6" class="no-data">ไม่พบข้อมูล</td></tr>';
     return;
   }
-
   data.forEach(item => {
+    const imgSrc = imageMap[item.name] || "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${item.code}</td>
@@ -428,29 +490,46 @@ function renderTable(data){
       <td>${item.room}</td>
       <td class="${item.status === "พร้อมใช้งาน" ? "status-ok" : "status-broken"}">${item.status}</td>
       <td>${item.date}</td>
+      <td><button class="view-back" data-img="${imgSrc}">ดูตัวอย่าง</button></td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-/* =========================
-   โหลดข้อมูลจาก localStorage
-========================= */
-let equipmentData = JSON.parse(localStorage.getItem("equipmentData")) || [];
-renderTable(equipmentData);
-
-/* =========================
-   ฟังก์ชันค้นหา
-========================= */
-document.getElementById("searchInput").addEventListener("input", function(){
-  const keyword = this.value.toLowerCase();
-  const filtered = equipmentData.filter(item =>
-    item.code.toLowerCase().includes(keyword) ||
-    item.name.toLowerCase().includes(keyword) ||
-    item.room.toLowerCase().includes(keyword)
+// ค้นหา
+document.getElementById("searchInput").addEventListener("input", e=>{
+  const value = e.target.value.toLowerCase();
+  const filtered = seedData.filter(item =>
+    item.code.toLowerCase().includes(value) ||
+    item.name.toLowerCase().includes(value) ||
+    item.room.toLowerCase().includes(value)
   );
   renderTable(filtered);
 });
+
+// Modal
+const modal = document.getElementById("modal");
+const modalImg = document.getElementById("modalImg");
+const closeModal = document.getElementById("closeModal");
+
+document.addEventListener("click", e=>{
+  if(e.target.classList.contains("view-back")){
+    const imgSrc = e.target.dataset.img;
+    if(imgSrc){
+      modalImg.src = imgSrc;
+      modal.style.display = "flex";
+    } else {
+      alert("ยังไม่มีรูปภาพสำหรับชิ้นนี้");
+    }
+  }
+});
+
+closeModal.addEventListener("click", ()=>{
+  modal.style.display = "none"; // หรือถ้าอยากทำ animation ปิด เพิ่ม class แล้วใช้ setTimeout
+});
+
+// render ตารางเริ่มต้น
+renderTable(seedData);
 </script>
 
 </body>
