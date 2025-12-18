@@ -212,10 +212,21 @@ for (let i=0; i<50; i++){
 </div>
 
 <script>
- // เช็คว่าผู้ใช้ล็อกอินหรือยัง
-if(!localStorage.getItem("userRole")) {
-    // ถ้ายังไม่ได้ล็อกอิน → ส่งไปหน้า login.html
-    window.location.replace("login.html");
+// เช็คว่า user ล็อกอินหรือยัง
+const userRole = localStorage.getItem("userRole");
+if(!userRole){
+    // ถ้า logout → แสดง popup ก่อน
+    const popup = document.getElementById("loginPopup");
+    const popupText = document.getElementById("popupText");
+    const popupIcon = document.getElementById("popupIcon");
+
+    popupText.innerText = "กรุณาเข้าสู่ระบบก่อน";
+    popupIcon.innerText = "⚠";
+    popup.style.display = "flex";
+
+    setTimeout(() => {
+        window.location.href = "login.html";
+    }, 2000); // รอ 2 วินาที
 }
 const urlParams = new URLSearchParams(window.location.search);
 const popup = document.getElementById("loginPopup");
@@ -239,14 +250,14 @@ if (urlParams.get("logout") === "success") {
 }
 
 function closePopup(){
-  popup.style.display = "none";
-  if (redirectToLogin) {
-    window.location.href = "login.html";
-  } else {
-    window.history.replaceState({}, '', "index.html");
-  }
+    const popup = document.getElementById("loginPopup");
+    popup.style.display = "none";
 }
 function logout(){
+    const popup = document.getElementById("loginPopup");
+    const popupText = document.getElementById("popupText");
+    const popupIcon = document.getElementById("popupIcon");
+
     // ล้างค่า userRole
     localStorage.removeItem("userRole"); 
 
