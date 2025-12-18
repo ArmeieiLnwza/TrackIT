@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายการครุภัณฑ์</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{font-family:'Prompt',sans-serif;margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:linear-gradient(180deg,#1a1a1a,#2d2d2d);
+  color:white;
+  min-height:100vh;
+  padding:20px;
+}
+header{
+  background:rgba(50,0,50,.85);
+  padding:20px 40px;
+  border-radius:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:30px;
+}
+nav a{
+  color:white;
+  text-decoration:none;
+  margin-left:20px;
+  font-weight:500;
+}
+nav a:hover{opacity:.7}
+
+.container{
+  max-width:1000px;
+  margin:auto;
+  background:rgba(50,0,50,.5);
+  padding:30px;
+  border-radius:20px;
+}
+
+.search-box{
+  display:flex;
+  justify-content:center;
+  margin-bottom:20px;
+}
+.search-box input{
+  width:60%;
+  padding:10px 15px;
+  border-radius:12px;
+  border:none;
+  outline:none;
+  font-size:15px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:12px;
+  text-align:center;
+  border-bottom:1px solid rgba(255,255,255,.2);
+}
+
+.status-ok{color:#4ade80;font-weight:600;}
+.status-broken{color:#f87171;font-weight:600;}
+.no-data{text-align:center;opacity:.6;padding:20px;}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>รายการครุภัณฑ์</h2>
+  <nav>
+    <a href="index.html">หน้าแรก</a>
+    <a href="equipment.html">ครุภัณฑ์</a>
+    <a href="admin.html" id="adminLink" style="display:none;">จัดการครุภัณฑ์</a>
+  </nav>
+</header>
+
+<div class="container">
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="ค้นหาเลขครุภัณฑ์ / รายการ / ห้อง">
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>เลขครุภัณฑ์</th>
+        <th>รายการ</th>
+        <th>ห้อง</th>
+        <th>สถานะ</th>
+        <th>วันที่ตรวจล่าสุด</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+</div>
+
+<script>
+/* =========================
+   ตรวจสอบสิทธิ์ admin
+========================= */
+if(localStorage.getItem("userRole")==="admin"){
+  document.getElementById("adminLink").style.display="inline";
+}
+
+/* =========================
+   ใส่ข้อมูลตั้งต้น (ครั้งแรก)
+========================= */
+if(!localStorage.getItem("equipmentData")){
+  const seedData = [
+    {code:"7440-001-0188-601-008", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-672-003", name:"all in one", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-672-002", name:"all in one", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-001-0188-601-024", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-001-0188-601-029", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-673-001", name:"all in one", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-672-007", name:"all in one", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-001-0188-601-028", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-001-0188-601-015", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-672-006", name:"all in one", room:"927", status:"พร้อมใช้งาน", date:"-"},
+
+  {code:"7440-001-0188-601-032", name:"คอม", room:"927", status:"ชำรุด", date:"-"},
+  {code:"7440-001-0188-601-003", name:"คอม", room:"927", status:"ชำรุด", date:"-"},
+
+  {code:"7440-006-0001-672-025", name:"จอ", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-673-010", name:"จอ", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"5820-010-0001--662-001", name:"ขาทีวี", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"FCU-NO-167", name:"แอร์", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"FCU-NO-168", name:"แอร์", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7110-007-0007-672-001", name:"โต๊ะคางหมู", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7110-007-0007-672-003", name:"โต๊ะคางหมู", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-001-0188-601-038", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-001-0188-601-010", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-672-027", name:"จอ", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-672-005", name:"จอ", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-672-009", name:"จอ", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7440-006-0001-672-004", name:"จอ", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  {code:"7730-003-0005-652-002", name:"TV", room:"927", status:"พร้อมใช้งาน", date:"-"},
+  // ===== ห้อง 925 =====
+{code:"7110-006-0063-632-037", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-002", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-164", name:"แอร์", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-163", name:"แอร์", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-162", name:"แอร์", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-036", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-672-020", name:"จอ", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-672-014", name:"จอ", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-672-012", name:"จอ", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-672-011", name:"จอ", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-301-002675-68-0038", name:"all in one", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-672-016", name:"จอ", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-672-017", name:"จอ", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-014", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-049", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-039", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-013", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0185-601-030", name:"คอม", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"6720-005-0002-662-001", name:"TV", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-050", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-003", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-039", name:"เก้าอี้", room:"925", status:"พร้อมใช้งาน", date:"-"},
+  // ===== ห้อง 922 =====
+{code:"7730-003-0036-643-003", name:"TV", room:"922", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0007-672-022", name:"เก้าอี้เกมมิ่ง", room:"922", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-642-038", name:"จอ", room:"922", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-156", name:"แอร์", room:"922", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-157", name:"แอร์", room:"922", status:"พร้อมใช้งาน", date:"-"},
+// ===== ห้อง 929 =====
+{code:"5820-010-0001-552-002", name:"ขาTV", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"7730-003-0006-652-001", name:"TV", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"4120-001-0084-008", name:"แอร์", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-047", name:"เก้าอี้", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-001", name:"เก้าอี้", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-046", name:"เก้าอี้", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-048", name:"เก้าอี้", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-012", name:"เก้าอี้", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-034", name:"เก้าอี้", room:"929", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-034", name:"เก้าอี้", room:"929", status:"พร้อมใช้งาน", date:"-"},
+// ===== ห้อง พักครู =====
+{code:"7125-002-0003-542-001", name:"ตู้", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-170", name:"แอร์", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-171", name:"แอร์", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7125-002-0089-591-003", name:"ตู้", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7125-002-0089-591-002", name:"ตู้", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-007-0001-531-001", name:"โต้ะ", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7125-002-0068-591-001", name:"ตู้", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7125-002-0089-591-001", name:"ตู้", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7125-002-0068-591-002", name:"ตู้", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"32-3-009-7110-007-0053", name:"โต้ะ", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-029", name:"จอ", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-672-039", name:"จอ", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-006-0001-672-050", name:"จอ", room:"พักครู", status:"พร้อมใช้งาน", date:"-"},
+// ===== ห้อง 923 =====
+{code:"7730-003-0036-643-001", name:"TV", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-024", name:"จอ", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0007-672-005", name:"เก้าอี้เกมมิ่ง", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-006", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-005", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-014", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-013", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-011", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-007", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-009", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-019", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-020", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-010", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-012", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-002", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-008", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-003", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-001", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-015", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-016", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-017", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-018", name:"all in one", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-158", name:"แอร์", room:"923", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-159", name:"แอร์", room:"923", status:"พร้อมใช้งาน", date:"-"},
+// ===== ห้อง 928 =====
+{code:"7440-006-0001-672-015", name:"จอ", room:"928", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-169", name:"แอร์", room:"928", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7440-001-0188-601-030", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-073", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-035", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-019", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0188-601-032", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-022", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-078", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-099", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-031", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-044", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-003", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-028", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-084", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+{code:"7440-001-0098-542-040", name:"จอ", room:"928", status:"ชำรุด", date:"-"},
+
+{code:"6110-010-009-572-117", name:"เครื่องสำรองไฟ", room:"928", status:"พร้อมใช้งาน", date:"-"},
+// ===== ห้อง 926 =====
+{code:"7110-006-0069-642-049", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-042", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-047", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-024", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-002", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-045", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-043", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-632-030", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-026", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-014", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-042", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-004", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-017", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-012", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-016", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-040", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-027", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-045", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-019", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-006", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-001", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7440-001-0188-601-019", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-014", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-011", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-039", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-027", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-037", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"FCU-NO-165", name:"แอร์", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"FCU-NO-166", name:"แอร์", room:"926", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7440-001-0188-601-006", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-001", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-016", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-002", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-012", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-031", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-015", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-034", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-013", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-020", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-022", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-025", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-023", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-036", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7110-006-0007-672-004", name:"เก้าอี้เกมมิ่ง", room:"926", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7440-001-0188-601-033", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-007", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-005", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-018", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-021", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-035", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-017", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-026", name:"จอ", room:"926", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7440-001-0188-601-011", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-039", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-037", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-014", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-001", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-002", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-031", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-034", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-020", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-028", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-036", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-006", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-016", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-012", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-015", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-013", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-022", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-023", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-026", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-035", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-018", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-007", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-033", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-021", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0188-601-017", name:"คอม", room:"926", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7110-006-0063-632-046", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-006", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-011", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-009", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-005", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-011", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-044", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0069-642-010", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-036", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-027", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-005", name:"เก้าอี้", room:"926", status:"พร้อมใช้งาน", date:"-"},
+// ===== ห้อง 921 =====
+{code:"7440-001-0183-662-004", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-021", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-023", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-022", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-024", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-025", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-026", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-027", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-028", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-029", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-030", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-031", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-032", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-033", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-034", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-035", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-036", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-037", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-038", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-039", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-040", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-041", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-042", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-043", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-044", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-045", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-046", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-047", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-048", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-049", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7440-001-0183-662-050", name:"คอม", room:"921", status:"พร้อมใช้งาน", date:"-"},
+
+// เก้าอี้
+{code:"7110-006-0063-632-007", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-008", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-013", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-015", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-019", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-021", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-024", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-026", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-028", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-029", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-030", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-033", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-038", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-041", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-048", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0063-632-050", name:"เก้าอี้", room:"921", status:"พร้อมใช้งาน", date:"-"},
+
+// โต๊ะ / เก้าอี้เกมมิ่ง / จอ
+{code:"7110-007-0007-672-002", name:"โต๊ะคางหมู", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-007-0007-672-003", name:"โต๊ะคางหมู", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-007-0007-672-004", name:"โต๊ะคางหมู", room:"921", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7110-006-0007-672-007", name:"เก้าอี้เกมมิ่ง", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0007-672-012", name:"เก้าอี้เกมมิ่ง", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0007-672-015", name:"เก้าอี้เกมมิ่ง", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0007-672-017", name:"เก้าอี้เกมมิ่ง", room:"921", status:"พร้อมใช้งาน", date:"-"},
+{code:"7110-006-0007-672-021", name:"เก้าอี้เกมมิ่ง", room:"921", status:"พร้อมใช้งาน", date:"-"},
+
+{code:"7730-003-0036-643-004", name:"จอ", room:"921", status:"พร้อมใช้งาน", date:"-"},
+
+];
+
+  localStorage.setItem("equipmentData", JSON.stringify(seedData));
+}
+
+/* =========================
+   โหลดข้อมูล
+========================= */
+let equipmentData = JSON.parse(localStorage.getItem("equipmentData")) || [];
+
+/* =========================
+   แสดงตาราง
+========================= */
+function renderTable(data){
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  if(data.length===0){
+    tbody.innerHTML = `<tr><td colspan="5" class="no-data">ไม่พบข้อมูล</td></tr>`;
+    return;
+  }
+
+  data.forEach(item=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${item.code}</td>
+        <td>${item.name}</td>
+        <td>${item.room}</td>
+        <td class="${item.status==="พร้อมใช้งาน"?"status-ok":"status-broken"}">
+          ${item.status}
+        </td>
+        <td>${item.date || "-"}</td>
+      </tr>
+    `;
+  });
+}
+
+/* =========================
+   ค้นหา
+========================= */
+document.getElementById("searchInput").addEventListener("input",function(){
+  const keyword = this.value.toLowerCase();
+  const filtered = equipmentData.filter(item =>
+    item.code.toLowerCase().includes(keyword) ||
+    item.name.toLowerCase().includes(keyword) ||
+    item.room.toLowerCase().includes(keyword)
+  );
+  renderTable(filtered);
+});
+
+/* =========================
+   เริ่มต้น
+========================= */
+renderTable(equipmentData);
+</script>
+
+</body>
+</html>
