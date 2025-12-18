@@ -73,7 +73,7 @@ button:hover{
   opacity:0.8;
 }
 
-/* Modal ปรับปรุง */
+/* Modal */
 #modal{
   display:none;
   position:fixed;
@@ -84,7 +84,6 @@ button:hover{
   align-items:center;
   animation: fadeIn 0.3s ease;
 }
-
 #modalContent{
   position:relative;
   max-width:600px;
@@ -97,12 +96,10 @@ button:hover{
   opacity:0;
   animation: scaleUp 0.3s forwards;
 }
-
 #modalContent img{
   width:100%;
   border-radius:10px;
 }
-
 #closeModal{
   position:absolute;
   top:10px;
@@ -118,8 +115,6 @@ button:hover{
   justify-content:center;
   align-items:center;
 }
-
-/* Animation */
 @keyframes fadeIn{
   from{opacity:0;}
   to{opacity:1;}
@@ -184,7 +179,7 @@ const imageMap = {
   "ตู้": "tu.jpg"
 };
 
-// ข้อมูลครุภัณฑ์
+// ข้อมูลครุภัณฑ์ (ตัวอย่าง)
 const seedData = [
   {code:"7440-001-0188-601-008", name:"คอม", room:"927", status:"พร้อมใช้งาน", date:"17/12/68"},
   {code:"7440-006-0001-672-003", name:"all in one", room:"927", status:"พร้อมใช้งาน", date:"17/12/68"},
@@ -473,36 +468,50 @@ const seedData = [
   {code:"7730-003-0036-643-004", name:"จอ", room:"921", status:"พร้อมใช้งาน", date:"17/12/68"}
 ];
 
-// สร้างตาราง
-function renderTable(data){
+// เก็บข้อมูลกลับ localStorage หากว่าง
+if(!localStorage.getItem("equipmentData")) {
+  localStorage.setItem("equipmentData", JSON.stringify(seedData));
+}
+
+// แสดงลิงก์ admin ถ้า role = admin
+if(localStorage.getItem("userRole") === "admin") {
+  document.getElementById("adminLink").style.display = "inline-block";
+}
+
+// โหลดข้อมูลจาก localStorage
+let equipmentData = JSON.parse(localStorage.getItem("equipmentData")) || [];
+
+// ฟังก์ชันสร้างตาราง
+function renderTable(data) {
   const tbody = document.getElementById("tableBody");
   tbody.innerHTML = "";
+
   if(data.length === 0){
-    tbody.innerHTML = '<tr><td colspan="6" class="no-data">ไม่พบข้อมูล</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="6" class="no-data">ไม่พบข้อมูล</td></tr>`;
     return;
   }
+
   data.forEach(item => {
-    const imgSrc = imageMap[item.name] || "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${item.code}</td>
       <td>${item.name}</td>
       <td>${item.room}</td>
-      <td class="${item.status === "พร้อมใช้งาน" ? "status-ok" : "status-broken"}">${item.status}</td>
+      <td class="${item.status==="ชำรุด"?"status-broken":"status-ok"}">${item.status}</td>
       <td>${item.date}</td>
-      <td><button class="view-back" data-img="${imgSrc}">ดูตัวอย่าง</button></td>
+      <td><button onclick="openModal('${imageMap[item.name] || ''}')">ดู</button></td>
     `;
     tbody.appendChild(tr);
   });
 }
 
 // ค้นหา
-document.getElementById("searchInput").addEventListener("input", e=>{
-  const value = e.target.value.toLowerCase();
-  const filtered = seedData.filter(item =>
-    item.code.toLowerCase().includes(value) ||
-    item.name.toLowerCase().includes(value) ||
-    item.room.toLowerCase().includes(value)
+document.getElementById("searchInput").addEventListener("input", (e)=>{
+  const search = e.target.value.toLowerCase();
+  const filtered = equipmentData.filter(item =>
+    item.code.toLowerCase().includes(search) ||
+    item.name.toLowerCase().includes(search) ||
+    item.room.toLowerCase().includes(search)
   );
   renderTable(filtered);
 });
@@ -510,26 +519,15 @@ document.getElementById("searchInput").addEventListener("input", e=>{
 // Modal
 const modal = document.getElementById("modal");
 const modalImg = document.getElementById("modalImg");
-const closeModal = document.getElementById("closeModal");
+document.getElementById("closeModal").addEventListener("click", ()=> modal.style.display="none");
+function openModal(src){
+  if(!src) return;
+  modalImg.src = src;
+  modal.style.display = "flex";
+}
 
-document.addEventListener("click", e=>{
-  if(e.target.classList.contains("view-back")){
-    const imgSrc = e.target.dataset.img;
-    if(imgSrc){
-      modalImg.src = imgSrc;
-      modal.style.display = "flex";
-    } else {
-      alert("ยังไม่มีรูปภาพสำหรับชิ้นนี้");
-    }
-  }
-});
-
-closeModal.addEventListener("click", ()=>{
-  modal.style.display = "none"; // หรือถ้าอยากทำ animation ปิด เพิ่ม class แล้วใช้ setTimeout
-});
-
-// render ตารางเริ่มต้น
-renderTable(seedData);
+// แสดงตารางครั้งแรก
+renderTable(equipmentData);
 </script>
 
 </body>
