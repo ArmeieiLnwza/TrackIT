@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>เข้าสู่ระบบผู้ใช้งาน</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -100,23 +100,7 @@ for(let i=0;i<50;i++){
 </div>
 
 <script>
-    // เช็คว่า user ล็อกอินหรือยัง
-const role = localStorage.getItem("userRole");
-if(!role){
-  // ถ้ายังไม่ได้ล็อกอิน → ส่งไป login.html
-  window.location.replace("login.html");
-}
-// ---------------------------
-// บัญชีแอดมิน
-// ---------------------------
-const adminAccount = {
-  email: "admin@example.com",
-  password: "ADMIN123"
-};
-
-// ---------------------------
-// บัญชีครู
-// ---------------------------
+const adminAccount = { email: "admin@example.com", password: "ADMIN123" };
 const teacherAccounts = [
   { email: "teacher1@example.com", password: "DBT1"},
   { email: "teacher2@example.com", password: "DBT2"},
@@ -128,45 +112,38 @@ const teacherAccounts = [
 
 const form = document.getElementById("loginForm");
 const errorMsg = document.getElementById("errorMsg");
-let nextPage = "index.html"; // ค่า default
+const popup = document.getElementById("successPopup");
+let nextPage = "index.html";
 
-// ---------------------------
-// ระบบ Login
-// ---------------------------
 form.addEventListener("submit", function(e){
   e.preventDefault();
-
   const emailInput = document.getElementById("email").value;
   const passwordInput = document.getElementById("password").value;
 
   // ตรวจสอบแอดมินก่อน
-  if (emailInput === adminAccount.email && passwordInput === adminAccount.password) {
-      localStorage.setItem("userRole", "admin");
-      nextPage = "admin.html";
-      document.getElementById("successPopup").style.display = "flex";
-      return;
+  if(emailInput===adminAccount.email && passwordInput===adminAccount.password){
+    localStorage.setItem("userRole","admin");
+    nextPage="admin.html";
+    popup.style.display="flex";
+    return;
   }
 
-  // ตรวจสอบครู/ผู้ใช้ทั่วไป
-  const account = teacherAccounts.find(acc => acc.email === emailInput && acc.password === passwordInput);
-
+  // ตรวจสอบครู/ผู้ใช้
+  const account = teacherAccounts.find(acc=>acc.email===emailInput && acc.password===passwordInput);
   if(account){
-      localStorage.setItem("userRole", "user");
-      nextPage = "index.html";
-      document.getElementById("successPopup").style.display="flex";
-  } 
-  else {
-      errorMsg.textContent = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+    localStorage.setItem("userRole","user");
+    nextPage="index.html";
+    popup.style.display="flex";
+  }else{
+    errorMsg.textContent="อีเมลหรือรหัสผ่านไม่ถูกต้อง";
   }
 });
 
-// ---------------------------
-// เมื่อกดปุ่ม OK
-// ---------------------------
+// เมื่อกด OK
 function goUser(){
+  popup.style.display="none";
   window.location.href = nextPage;
 }
-
 </script>
 
 </body>
